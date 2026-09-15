@@ -67,7 +67,7 @@ public class ContactService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         if (!contactRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Contato não encontrada");
+            throw new ResourceNotFoundException("Contato não encontrado");
         }
 
         contactRepository.deleteById(id);
