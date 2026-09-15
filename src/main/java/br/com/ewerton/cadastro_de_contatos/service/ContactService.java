@@ -55,6 +55,11 @@ public class ContactService {
         ContactEntity existingContact = contactRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
 
+        if (!existingContact.getEmail().equals(contactRequestDto.email())
+                && contactRepository.existsByEmail(contactRequestDto.email())) {
+            throw new EmailAlreadyExistsException("O e-mail já está cadastrado.");
+        }
+
         existingContact.setName(contactRequestDto.name());
         existingContact.setEmail(contactRequestDto.email());
         existingContact.setPhone(contactRequestDto.phone());
