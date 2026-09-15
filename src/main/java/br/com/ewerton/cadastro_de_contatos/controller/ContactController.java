@@ -14,13 +14,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/contacts")
 @RequiredArgsConstructor
+@Validated
 public class ContactController {
 
     private final ContactService contactService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ContactResponseDto addContact(@RequestBody ContactRequestDto contactRequestDto) {
+    public ContactResponseDto addContact(@Valid @RequestBody ContactRequestDto contactRequestDto) {
         return contactService.save(contactRequestDto);
     }
 
@@ -38,7 +39,7 @@ public class ContactController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public ContactResponseDto updateContact(@PathVariable Long id, @RequestBody ContactRequestDto contactRequestDto) {
+    public ContactResponseDto updateContact(@PathVariable Long id, @Valid @RequestBody ContactRequestDto contactRequestDto) {
         return contactService.update(id, contactRequestDto);
     }
 
