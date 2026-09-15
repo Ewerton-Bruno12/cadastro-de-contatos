@@ -86,7 +86,7 @@ public class ContactService {
                 .toList();
     }
 
-    public ContactResponseDto toDto(ContactEntity contact) {
+    private ContactResponseDto toDto(ContactEntity contact) {
         return new ContactResponseDto(
                 contact.getId(),
                 contact.getName(),
