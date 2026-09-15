@@ -1,5 +1,6 @@
 package br.com.ewerton.cadastro_de_contatos.handler;
 
+import br.com.ewerton.cadastro_de_contatos.exception.EmailAlreadyExistsException;
 import br.com.ewerton.cadastro_de_contatos.exception.ErrorResponse;
 import br.com.ewerton.cadastro_de_contatos.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        ErrorResponse response = ErrorResponse.builder()
+                .message(ex.getMessage())
+                .status(HttpStatus.CONFLICT.value())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
 }

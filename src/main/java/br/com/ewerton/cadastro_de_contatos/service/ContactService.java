@@ -2,6 +2,7 @@ package br.com.ewerton.cadastro_de_contatos.service;
 
 import br.com.ewerton.cadastro_de_contatos.dto.ContactRequestDto;
 import br.com.ewerton.cadastro_de_contatos.dto.ContactResponseDto;
+import br.com.ewerton.cadastro_de_contatos.exception.EmailAlreadyExistsException;
 import br.com.ewerton.cadastro_de_contatos.exception.ResourceNotFoundException;
 import br.com.ewerton.cadastro_de_contatos.model.ContactEntity;
 import br.com.ewerton.cadastro_de_contatos.repository.IContactRepository;
@@ -34,6 +35,10 @@ public class ContactService {
 
     @Transactional
     public ContactResponseDto save(ContactRequestDto contactRequestDto) {
+        if (contactRepository.existsByEmail(contactRequestDto.email())) {
+            throw new EmailAlreadyExistsException(("O e-mail '" + contactRequestDto.email() + "' já está cadastrado."));
+        }
+
         ContactEntity newContact = ContactEntity.builder()
                 .name(contactRequestDto.name())
                 .email(contactRequestDto.email())
