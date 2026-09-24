@@ -1,55 +1,86 @@
 package br.com.ewerton.cadastro_de_contatos.handler;
 
 import br.com.ewerton.cadastro_de_contatos.exception.EmailAlreadyExistsException;
-import br.com.ewerton.cadastro_de_contatos.exception.ErrorResponse;
 import br.com.ewerton.cadastro_de_contatos.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.Instant;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
-        ErrorResponse response = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .status(HttpStatus.NOT_FOUND.value())
-                .build();
+    public ProblemDetail handleResourceNotFound(ResourceNotFoundException ex) {
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+
+        problemDetail.setTitle("Recurso não encontrado");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationError(MethodArgumentNotValidException ex) {
+    public ProblemDetail handleValidationError(MethodArgumentNotValidException ex) {
 
         String errorMessage = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(FieldError::getDefaultMessage) // Pega a "message" do DTO request
+                .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
-        ErrorResponse response = ErrorResponse.builder()
-                .message(errorMessage)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .build();
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                errorMessage
+        );
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        problemDetail.setTitle("Erro de validação");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
-        ErrorResponse response = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .status(HttpStatus.CONFLICT.value())
-                .build();
+    public ProblemDetail handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+
+        problemDetail.setTitle("E-mail já cadastrado");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
     }
 
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+
+        String requiredType = ex.getRequiredType() != null
+                ? ex.getRequiredType().getSimpleName()
+                : "desconhecido";
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "O parâmetro '" + ex.getName()
+                        + "' recebeu um valor inválido. Era esperado um valor do tipo "
+                        + requiredType + "."
+        );
+
+        problemDetail.setTitle("Tipo de Parâmetro Inválido");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
 }
