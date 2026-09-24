@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -25,26 +26,6 @@ public class GlobalExceptionHandler {
         );
 
         problemDetail.setTitle("Recurso não encontrado");
-        problemDetail.setProperty("timestamp", Instant.now());
-
-        return problemDetail;
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidationError(MethodArgumentNotValidException ex) {
-
-        String errorMessage = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(FieldError::getDefaultMessage)
-                .collect(Collectors.joining(", "));
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                errorMessage
-        );
-
-        problemDetail.setTitle("Erro de validação");
         problemDetail.setProperty("timestamp", Instant.now());
 
         return problemDetail;
@@ -79,6 +60,28 @@ public class GlobalExceptionHandler {
         );
 
         problemDetail.setTitle("Tipo de Parâmetro Inválido");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidationError(MethodArgumentNotValidException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Um ou mais campos estão inválidos. Faça a correção e tente novamente."
+        );
+        problemDetail.setTitle("Erro de Validação");
+
+        Map<String, String> invalidFields = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Campo inválido"
+                ));
+
+        problemDetail.setProperty("invalid_fields", invalidFields);
         problemDetail.setProperty("timestamp", Instant.now());
 
         return problemDetail;
