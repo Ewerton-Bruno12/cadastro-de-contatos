@@ -17,73 +17,46 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private ProblemDetail buildProblem(HttpStatus status, String title, String detail) {
+        var problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setTitle(title);
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleResourceNotFound(ResourceNotFoundException ex) {
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.NOT_FOUND,
-                ex.getMessage()
-        );
-
-        problemDetail.setTitle("Recurso não encontrado");
-        problemDetail.setProperty("timestamp", Instant.now());
-
-        return problemDetail;
+        return buildProblem(HttpStatus.NOT_FOUND, "Recurso não encontrado", ex.getMessage());
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ProblemDetail handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT,
-                ex.getMessage()
-        );
-
-        problemDetail.setTitle("E-mail já cadastrado");
-        problemDetail.setProperty("timestamp", Instant.now());
-
-        return problemDetail;
+        return buildProblem(HttpStatus.CONFLICT, "E-mail já cadastrado", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "desconhecido";
+        String detail = "O parâmetro '" + ex.getName() + "' recebeu um valor inválido. Era esperado um valor do tipo " + requiredType + ".";
 
-        String requiredType = ex.getRequiredType() != null
-                ? ex.getRequiredType().getSimpleName()
-                : "desconhecido";
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                "O parâmetro '" + ex.getName()
-                        + "' recebeu um valor inválido. Era esperado um valor do tipo "
-                        + requiredType + "."
-        );
-
-        problemDetail.setTitle("Tipo de Parâmetro Inválido");
-        problemDetail.setProperty("timestamp", Instant.now());
-
-        return problemDetail;
+        return buildProblem(HttpStatus.BAD_REQUEST, "Tipo de Parâmetro Inválido", detail);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationError(MethodArgumentNotValidException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                "Um ou mais campos estão inválidos. Faça a correção e tente novamente."
-        );
-        problemDetail.setTitle("Erro de Validação");
+        String detail = "Um ou mais campos estão inválidos. Faça a correção e tente novamente.";
+        ProblemDetail problemDetail = buildProblem(HttpStatus.BAD_REQUEST, "Erro de Validação", detail);
 
         Map<String, String> invalidFields = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Campo inválido"
+                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Campo inválido",
+                        (existing, replacement) -> existing
                 ));
 
         problemDetail.setProperty("invalid_fields", invalidFields);
-        problemDetail.setProperty("timestamp", Instant.now());
-
         return problemDetail;
     }
 }
